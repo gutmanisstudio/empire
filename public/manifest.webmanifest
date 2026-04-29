@@ -1,0 +1,10 @@
+{
+  "name": "Empire OS",
+  "short_name": "Empire",
+  "description": "Real-life founder sim. Track routine, log outreach, unlock real upgrades.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait"
+}
