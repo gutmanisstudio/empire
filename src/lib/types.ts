@@ -75,6 +75,9 @@ export interface UserState {
   monthlyBurn?: number; // for runway calc — derived from bills + variable costs
   bills?: Bill[]; // recurring monthly non-negotiables
   variableCosts?: VariableCost[]; // fuel, food, utilities — informational
+  // Money explicitly earmarked for each cash-metric upgrade (key = upgrade.id).
+  // Bank cash alone does NOT count toward goals — only what you allocate here.
+  goalSavings?: Record<string, number>;
 }
 
 export type BillCategory = "telecom" | "transport" | "subscription" | "loan" | "other";

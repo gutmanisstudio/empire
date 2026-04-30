@@ -17,7 +17,7 @@ export const DEFAULT_BILLS: Bill[] = [
 // Variable costs — informational, family helps cover when needed.
 export const DEFAULT_VARIABLE_COSTS: VariableCost[] = [
   { id: "fuel", name: "Car fuel", estimate: 200 },
-  { id: "food", name: "Food", estimate: 0 },
+  { id: "food", name: "Food", estimate: 400 },
   { id: "utilities", name: "Utilities", estimate: 100 },
 ];
 
@@ -199,6 +199,7 @@ export const INITIAL_STATE: UserState = {
   monthlyBurn: 0,
   bills: DEFAULT_BILLS,
   variableCosts: DEFAULT_VARIABLE_COSTS,
+  goalSavings: {},
 };
 
 export const STORAGE_KEY = "empire.v1";

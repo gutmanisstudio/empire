@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useStore, metricValue } from "@/lib/store";
-import { formatMetricValue, formatThreshold, metricLabel } from "@/lib/format";
+import { eur, formatMetricValue, formatThreshold, metricLabel } from "@/lib/format";
 import type { Upgrade } from "@/lib/types";
 
 const CATEGORY_LABEL: Record<Upgrade["category"], string> = {
@@ -18,7 +18,7 @@ const CATEGORY_LABEL: Record<Upgrade["category"], string> = {
 const CATEGORY_ORDER: Upgrade["category"][] = ["self", "freedom", "home", "car", "team", "other"];
 
 export function Empire() {
-  const { state } = useStore();
+  const { state, bumpGoalSavings } = useStore();
   const { upgrades } = state;
 
   const grouped = upgrades.reduce<Record<string, Upgrade[]>>((acc, u) => {
@@ -42,9 +42,10 @@ export function Empire() {
               .slice()
               .sort((a, b) => a.threshold - b.threshold)
               .map((u) => {
-                const value = metricValue(state, u.metric);
+                const value = metricValue(state, u);
                 const pct = Math.min(100, (value / u.threshold) * 100);
                 const unlocked = !!u.unlockedAt;
+                const isCash = u.metric === "cash";
                 return (
                   <motion.div
                     key={u.id}
@@ -106,6 +107,30 @@ export function Empire() {
                           </span>
                           <span>{metricLabel(u.metric)}</span>
                         </div>
+                        {isCash && !unlocked && (
+                          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                            <span className="mr-1 text-[10px] uppercase tracking-[0.2em] text-white/40">
+                              Allocate
+                            </span>
+                            {[100, 500, 1000].map((d) => (
+                              <button
+                                key={d}
+                                onClick={() => bumpGoalSavings(u.id, d)}
+                                className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10px] text-white/70 hover:bg-white/[0.06] active:bg-white/10"
+                              >
+                                +{eur(d)}
+                              </button>
+                            ))}
+                            {value > 0 && (
+                              <button
+                                onClick={() => bumpGoalSavings(u.id, -100)}
+                                className="rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10px] text-white/40 hover:text-white/70"
+                              >
+                                −{eur(100)}
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </motion.div>

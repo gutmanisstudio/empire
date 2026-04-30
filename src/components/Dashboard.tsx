@@ -11,7 +11,7 @@ import type { Upgrade, RoutineLog, UserState } from "@/lib/types";
 function nextUpgrade(state: UserState): Upgrade | undefined {
   const locked = state.upgrades.filter((u) => !u.unlockedAt);
   return locked
-    .map((u) => ({ u, ratio: metricValue(state, u.metric) / u.threshold }))
+    .map((u) => ({ u, ratio: metricValue(state, u) / u.threshold }))
     .sort((a, b) => b.ratio - a.ratio)[0]?.u;
 }
 
@@ -75,7 +75,7 @@ export function Dashboard() {
     };
   const stats = deriveStats(state.routine);
   const next = nextUpgrade(state);
-  const nextValue = next ? metricValue(state, next.metric) : 0;
+  const nextValue = next ? metricValue(state, next) : 0;
   const nextProgress = next ? Math.min(100, (nextValue / next.threshold) * 100) : 0;
   const reminder = reminderFor(todayLog);
 

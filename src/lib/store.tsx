@@ -17,6 +17,7 @@ interface StoreContext {
   setMoney: (patch: Partial<Pick<UserState, "bankBalance" | "mrr" | "totalRevenue" | "monthlyBurn">>) => void;
   togglePaidBill: (billId: string, monthKey: string) => void;
   updateBill: (billId: string, patch: Partial<Bill>) => void;
+  bumpGoalSavings: (goalId: string, delta: number) => void;
   resetAll: () => void;
 }
 
@@ -27,12 +28,15 @@ function todayKey(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export function metricValue(s: UserState, metric: Upgrade["metric"]): number {
-  switch (metric) {
+// For cash-metric upgrades, value comes from the per-goal savings bucket —
+// not bank balance. Bank cash is operating money for bills/spending; goals
+// only count what's been explicitly earmarked.
+export function metricValue(s: UserState, u: Upgrade): number {
+  switch (u.metric) {
     case "mrr":
       return s.mrr;
     case "cash":
-      return s.bankBalance;
+      return s.goalSavings?.[u.id] ?? 0;
     case "totalRevenue":
       return s.totalRevenue;
     case "mealsStreak":
@@ -52,7 +56,7 @@ function evaluateUnlocks(s: UserState): UserState {
     let value: number;
     switch (u.metric) {
       case "mrr": value = s.mrr; break;
-      case "cash": value = s.bankBalance; break;
+      case "cash": value = s.goalSavings?.[u.id] ?? 0; break;
       case "totalRevenue": value = s.totalRevenue; break;
       case "mealsStreak": value = stats.mealsStreak; break;
       case "sleepStreak": value = stats.sleepStreak; break;
@@ -214,6 +218,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [setState],
   );
 
+  const bumpGoalSavings = useCallback(
+    (goalId: string, delta: number) => {
+      setState((prev) => {
+        const cur = prev.goalSavings?.[goalId] ?? 0;
+        return {
+          ...prev,
+          goalSavings: { ...(prev.goalSavings ?? {}), [goalId]: Math.max(0, cur + delta) },
+        };
+      });
+    },
+    [setState],
+  );
+
   const resetAll = useCallback(() => {
     setRaw(INITIAL_STATE);
   }, []);
@@ -230,6 +247,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setMoney,
       togglePaidBill,
       updateBill,
+      bumpGoalSavings,
       resetAll,
     }),
     [
@@ -243,6 +261,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setMoney,
       togglePaidBill,
       updateBill,
+      bumpGoalSavings,
       resetAll,
     ],
   );
