@@ -83,8 +83,58 @@ export function Dashboard() {
   const todayReplies = state.outreach.filter((e) => e.date === todayKey() && e.replied).length;
   const runway = state.monthlyBurn && state.monthlyBurn > 0 ? state.bankBalance / state.monthlyBurn : null;
 
+  // Bills-first widget. Empire surplus only counts after these are covered.
+  const mk = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
+  const bills = state.bills ?? [];
+  const billsTotal = bills.reduce((s, b) => s + b.amount, 0);
+  const billsPaid = bills.filter((b) => b.paid?.[mk]).reduce((s, b) => s + b.amount, 0);
+  const billsLeft = billsTotal - billsPaid;
+  const billsCovered = state.mrr >= billsTotal;
+  const today = new Date().getDate();
+  const overdueCount = bills.filter((b) => !b.paid?.[mk] && b.dueDay < today).length;
+
   return (
     <div className="space-y-5 pb-32">
+      {/* Bills first — non-negotiables before any empire upgrade. */}
+      {billsTotal > 0 && (
+        <section
+          className={`rounded-2xl border p-4 ${
+            billsLeft === 0
+              ? "border-emerald-400/30 bg-emerald-400/5"
+              : overdueCount > 0
+                ? "border-red-400/30 bg-red-400/5"
+                : "border-white/10 bg-white/[0.02]"
+          }`}
+        >
+          <div className="flex items-baseline justify-between text-[10px] uppercase tracking-[0.25em] text-white/50">
+            <span>Bills this month</span>
+            <span>{billsCovered ? "MRR covers ✓" : "MRR short"}</span>
+          </div>
+          <div className="mt-2 flex items-baseline justify-between gap-3">
+            <div>
+              <div className="text-2xl font-semibold tabular-nums">
+                {billsLeft === 0 ? eur(billsTotal) : eur(billsLeft)}
+              </div>
+              <div className="text-[11px] text-white/50">
+                {billsLeft === 0 ? "all paid this month" : "left to pay"}
+              </div>
+            </div>
+            <div className="text-right text-[11px] text-white/50">
+              {bills.filter((b) => b.paid?.[mk]).length}/{bills.length} paid
+              {overdueCount > 0 && (
+                <div className="mt-0.5 text-red-300">{overdueCount} overdue</div>
+              )}
+            </div>
+          </div>
+          <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-white/5">
+            <div
+              className="h-full bg-emerald-400 transition-all"
+              style={{ width: `${billsTotal ? (billsPaid / billsTotal) * 100 : 0}%` }}
+            />
+          </div>
+        </section>
+      )}
+
       {/* Reminder banner — only when something basic is missing */}
       {reminder && (
         <motion.div

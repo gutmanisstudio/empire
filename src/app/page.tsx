@@ -9,6 +9,7 @@ import { Empire } from "@/components/Empire";
 import { Funnel } from "@/components/Funnel";
 import { Log } from "@/components/Log";
 import { History } from "@/components/History";
+import { Bills } from "@/components/Bills";
 
 function AppShell() {
   const { ready, resetAll } = useStore();
@@ -47,6 +48,7 @@ function AppShell() {
             transition={{ duration: 0.18 }}
           >
             {view === "home" && <Dashboard />}
+            {view === "bills" && <Bills />}
             {view === "history" && <History />}
             {view === "empire" && <Empire />}
             {view === "funnel" && <Funnel />}

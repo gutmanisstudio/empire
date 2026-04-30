@@ -72,7 +72,27 @@ export interface UserState {
   outreach: OutreachEntry[];
   routine: Record<string, RoutineLog>; // keyed by date
   goals: Goal[];
-  monthlyBurn?: number; // for runway calc
+  monthlyBurn?: number; // for runway calc — derived from bills + variable costs
+  bills?: Bill[]; // recurring monthly non-negotiables
+  variableCosts?: VariableCost[]; // fuel, food, utilities — informational
+}
+
+export type BillCategory = "telecom" | "transport" | "subscription" | "loan" | "other";
+
+export interface Bill {
+  id: string;
+  name: string;
+  amount: number; // €
+  dueDay: number; // 1-31, day of month
+  category: BillCategory;
+  // Payment marker per month, key = "YYYY-MM".
+  paid?: Record<string, boolean>;
+}
+
+export interface VariableCost {
+  id: string;
+  name: string;
+  estimate: number; // typical monthly € spend
 }
 
 export interface Goal {

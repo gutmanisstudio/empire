@@ -1,4 +1,25 @@
-import type { UserState, Upgrade } from "./types";
+import type { UserState, Upgrade, Bill, VariableCost } from "./types";
+
+// Monthly non-negotiables. Sorted by due day so the list reads chronologically.
+export const DEFAULT_BILLS: Bill[] = [
+  { id: "bite", name: "Bite (mobile)", amount: 68, dueDay: 15, category: "telecom" },
+  { id: "lmt", name: "LMT (mobile)", amount: 110, dueDay: 15, category: "telecom" },
+  { id: "car-payment", name: "Car payment", amount: 220, dueDay: 15, category: "transport" },
+  { id: "car-insurance", name: "Car insurance", amount: 23, dueDay: 15, category: "transport" },
+  { id: "pc-payment", name: "PC payment", amount: 60, dueDay: 20, category: "loan" },
+  { id: "netlify", name: "Netlify", amount: 9, dueDay: 20, category: "subscription" },
+  { id: "claude", name: "Claude", amount: 110, dueDay: 23, category: "subscription" },
+  { id: "canva", name: "Canva", amount: 13, dueDay: 24, category: "subscription" },
+  { id: "spotify", name: "Spotify", amount: 17, dueDay: 28, category: "subscription" },
+  { id: "capcut", name: "CapCut", amount: 30, dueDay: 1, category: "subscription" },
+];
+
+// Variable costs — informational, family helps cover when needed.
+export const DEFAULT_VARIABLE_COSTS: VariableCost[] = [
+  { id: "fuel", name: "Car fuel", estimate: 200 },
+  { id: "food", name: "Food", estimate: 0 },
+  { id: "utilities", name: "Utilities", estimate: 100 },
+];
 
 export const DEFAULT_UPGRADES: Upgrade[] = [
   // --- Self / body first. These come before any money goal on purpose. ---
@@ -176,6 +197,8 @@ export const INITIAL_STATE: UserState = {
   routine: {},
   goals: [],
   monthlyBurn: 0,
+  bills: DEFAULT_BILLS,
+  variableCosts: DEFAULT_VARIABLE_COSTS,
 };
 
 export const STORAGE_KEY = "empire.v1";

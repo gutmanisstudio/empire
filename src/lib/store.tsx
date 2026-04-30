@@ -1,8 +1,8 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import type { UserState, OutreachEntry, RoutineLog, Upgrade } from "./types";
-import { INITIAL_STATE, STORAGE_KEY } from "./defaults";
+import type { UserState, OutreachEntry, RoutineLog, Upgrade, Bill } from "./types";
+import { INITIAL_STATE, STORAGE_KEY, DEFAULT_BILLS, DEFAULT_VARIABLE_COSTS } from "./defaults";
 import { deriveStats } from "./streaks";
 
 interface StoreContext {
@@ -15,6 +15,8 @@ interface StoreContext {
   deleteOutreach: (id: string) => void;
   setRoutine: (date: string, patch: Partial<RoutineLog>) => void;
   setMoney: (patch: Partial<Pick<UserState, "bankBalance" | "mrr" | "totalRevenue" | "monthlyBurn">>) => void;
+  togglePaidBill: (billId: string, monthKey: string) => void;
+  updateBill: (billId: string, patch: Partial<Bill>) => void;
   resetAll: () => void;
 }
 
@@ -85,10 +87,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         for (const stored of parsed.upgrades ?? []) {
           if (!defaultIds.has(stored.id) && stored.unlockedAt) upgrades.push(stored);
         }
+        // Merge bills: defaults provide id/name/amount/dueDay/category;
+        // stored entries contribute the paid history. Drop legacy bills that
+        // are no longer in defaults to keep the list clean.
+        const storedBillsById = new Map((parsed.bills ?? []).map((b) => [b.id, b] as const));
+        const bills: Bill[] = DEFAULT_BILLS.map((def) => {
+          const stored = storedBillsById.get(def.id);
+          return stored ? { ...def, paid: stored.paid } : def;
+        });
         const merged: UserState = {
           ...INITIAL_STATE,
           ...parsed,
           upgrades,
+          bills,
+          variableCosts: parsed.variableCosts ?? DEFAULT_VARIABLE_COSTS,
         };
         // Evaluate unlocks on load so streak milestones already crossed get marked.
         setRaw(evaluateUnlocks(merged));
@@ -178,13 +190,61 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     [setState],
   );
 
+  const togglePaidBill = useCallback(
+    (billId: string, monthKey: string) => {
+      setState((prev) => ({
+        ...prev,
+        bills: (prev.bills ?? []).map((b) => {
+          if (b.id !== billId) return b;
+          const cur = b.paid?.[monthKey] ?? false;
+          return { ...b, paid: { ...(b.paid ?? {}), [monthKey]: !cur } };
+        }),
+      }));
+    },
+    [setState],
+  );
+
+  const updateBill = useCallback(
+    (billId: string, patch: Partial<Bill>) => {
+      setState((prev) => ({
+        ...prev,
+        bills: (prev.bills ?? []).map((b) => (b.id === billId ? { ...b, ...patch } : b)),
+      }));
+    },
+    [setState],
+  );
+
   const resetAll = useCallback(() => {
     setRaw(INITIAL_STATE);
   }, []);
 
   const value = useMemo<StoreContext>(
-    () => ({ state, ready, setState, addOutreach, updateOutreach, deleteOutreach, setRoutine, setMoney, resetAll }),
-    [state, ready, setState, addOutreach, updateOutreach, deleteOutreach, setRoutine, setMoney, resetAll],
+    () => ({
+      state,
+      ready,
+      setState,
+      addOutreach,
+      updateOutreach,
+      deleteOutreach,
+      setRoutine,
+      setMoney,
+      togglePaidBill,
+      updateBill,
+      resetAll,
+    }),
+    [
+      state,
+      ready,
+      setState,
+      addOutreach,
+      updateOutreach,
+      deleteOutreach,
+      setRoutine,
+      setMoney,
+      togglePaidBill,
+      updateBill,
+      resetAll,
+    ],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
