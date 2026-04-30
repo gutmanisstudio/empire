@@ -41,17 +41,20 @@ export function Dashboard() {
     setState((prev) => {
       const date = todayKey();
       const existing = prev.routine[date];
-      const base: RoutineLog = {
-        date,
-        breakfast: false,
-        lunch: false,
-        dinner: false,
-        trained: false,
-        worked: false,
-        timeOff: false,
-        water: 0,
-        ...existing,
-      };
+      // Object.assign avoids TS duplicate-key warnings on literal spread.
+      const base: RoutineLog = Object.assign(
+        {
+          date,
+          breakfast: false,
+          lunch: false,
+          dinner: false,
+          trained: false,
+          worked: false,
+          timeOff: false,
+          water: 0,
+        } as RoutineLog,
+        existing,
+      );
       const cur = (base[field] as number | undefined) ?? 0;
       return {
         ...prev,

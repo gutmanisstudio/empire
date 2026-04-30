@@ -147,20 +147,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     (date: string, patch: Partial<RoutineLog>) => {
       setState((prev) => {
         const existing = prev.routine[date];
-        // Build a complete RoutineLog. Spread existing last so we preserve any
-        // legacy fields (e.g. meals count) on entries created before the
-        // checklist redesign.
-        const base = {
-          date,
-          breakfast: false,
-          lunch: false,
-          dinner: false,
-          trained: false,
-          worked: false,
-          timeOff: false,
-          water: 0,
-          ...existing,
-        };
+        // Use Object.assign to avoid TS duplicate-key warnings while still
+        // preserving any legacy fields on pre-checklist entries.
+        const base = Object.assign(
+          {
+            date,
+            breakfast: false,
+            lunch: false,
+            dinner: false,
+            trained: false,
+            worked: false,
+            timeOff: false,
+            water: 0,
+          },
+          existing,
+        );
         return {
           ...prev,
           routine: { ...prev.routine, [date]: { ...base, ...patch, date } },
