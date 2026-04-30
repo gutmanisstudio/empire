@@ -1,9 +1,10 @@
 "use client";
 
-export type View = "home" | "empire" | "funnel" | "log";
+export type View = "home" | "empire" | "funnel" | "log" | "history";
 
 const TABS: { id: View; label: string; glyph: string }[] = [
   { id: "home", label: "Home", glyph: "✺" },
+  { id: "history", label: "History", glyph: "◐" },
   { id: "empire", label: "Empire", glyph: "◆" },
   { id: "funnel", label: "Funnel", glyph: "▲" },
   { id: "log", label: "Log", glyph: "✦" },

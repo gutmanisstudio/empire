@@ -1,17 +1,23 @@
 // Core domain types for the Empire life-sim tracker.
 // All state is single-user and persists in localStorage.
 
-export type UpgradeMetric = "mrr" | "cash" | "totalRevenue";
+export type UpgradeMetric =
+  | "mrr"
+  | "cash"
+  | "totalRevenue"
+  | "mealsStreak" // consecutive days with meals === 3
+  | "sleepStreak" // consecutive days with sleepHours >= 7
+  | "trainingLast7"; // training sessions in last 7 days
 
 export interface Upgrade {
   id: string;
   name: string;
-  category: "car" | "home" | "team" | "freedom" | "other";
+  category: "self" | "car" | "home" | "team" | "freedom" | "other";
   icon: string; // typographic glyph fallback
   image?: string; // optional /public path, e.g. /images/m340i.png
   description: string;
   metric: UpgradeMetric;
-  threshold: number; // €
+  threshold: number; // € for money metrics, days/sessions otherwise
   unlockedAt?: string; // ISO date string when crossed
 }
 
@@ -37,12 +43,25 @@ export interface OutreachEntry {
 export interface RoutineLog {
   // Per-day record. key = ISO date (YYYY-MM-DD).
   date: string;
-  meals: number; // 0-3
+  // Daily checklist items — each is an independent tick.
+  breakfast: boolean;
+  lunch: boolean;
+  dinner: boolean;
   trained: boolean;
+  worked: boolean; // worked / made progress on agency
+  timeOff: boolean; // deliberate rest / time off
+  water: number; // glasses, 0-8
   sleepHours?: number;
   woke?: string; // HH:MM
   sleptAt?: string; // HH:MM previous night
   notes?: string;
+  // Daily pipeline counters — quick +/− on the Today screen.
+  dmsSent?: number;
+  proposalsSent?: number;
+  demosDone?: number;
+  callsBooked?: number;
+  /** @deprecated legacy 0-3 count; kept so old logs still feed streaks */
+  meals?: number;
 }
 
 export interface UserState {

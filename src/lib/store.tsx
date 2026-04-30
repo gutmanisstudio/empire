@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { UserState, OutreachEntry, RoutineLog, Upgrade } from "./types";
 import { INITIAL_STATE, STORAGE_KEY } from "./defaults";
+import { deriveStats } from "./streaks";
 
 interface StoreContext {
   state: UserState;
@@ -24,11 +25,37 @@ function todayKey(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+export function metricValue(s: UserState, metric: Upgrade["metric"]): number {
+  switch (metric) {
+    case "mrr":
+      return s.mrr;
+    case "cash":
+      return s.bankBalance;
+    case "totalRevenue":
+      return s.totalRevenue;
+    case "mealsStreak":
+      return deriveStats(s.routine).mealsStreak;
+    case "sleepStreak":
+      return deriveStats(s.routine).sleepStreak;
+    case "trainingLast7":
+      return deriveStats(s.routine).trainingLast7;
+  }
+}
+
 function evaluateUnlocks(s: UserState): UserState {
   const now = new Date().toISOString();
+  const stats = deriveStats(s.routine);
   const upgrades: Upgrade[] = s.upgrades.map((u) => {
     if (u.unlockedAt) return u;
-    const value = u.metric === "mrr" ? s.mrr : u.metric === "cash" ? s.bankBalance : s.totalRevenue;
+    let value: number;
+    switch (u.metric) {
+      case "mrr": value = s.mrr; break;
+      case "cash": value = s.bankBalance; break;
+      case "totalRevenue": value = s.totalRevenue; break;
+      case "mealsStreak": value = stats.mealsStreak; break;
+      case "sleepStreak": value = stats.sleepStreak; break;
+      case "trainingLast7": value = stats.trainingLast7; break;
+    }
     if (value >= u.threshold) return { ...u, unlockedAt: now };
     return u;
   });
@@ -52,17 +79,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           const stored = storedById.get(def.id);
           return stored ? { ...def, unlockedAt: stored.unlockedAt } : def;
         });
-        // Also keep any custom upgrades the user added that aren't in defaults.
+        // Keep deprecated upgrades only if they were already unlocked (preserve achievements);
+        // drop locked-but-removed ones so renames/restructures clean up automatically.
         const defaultIds = new Set(INITIAL_STATE.upgrades.map((u) => u.id));
         for (const stored of parsed.upgrades ?? []) {
-          if (!defaultIds.has(stored.id)) upgrades.push(stored);
+          if (!defaultIds.has(stored.id) && stored.unlockedAt) upgrades.push(stored);
         }
         const merged: UserState = {
           ...INITIAL_STATE,
           ...parsed,
           upgrades,
         };
-        setRaw(merged);
+        // Evaluate unlocks on load so streak milestones already crossed get marked.
+        setRaw(evaluateUnlocks(merged));
       }
     } catch {
       // corrupt storage; keep defaults
@@ -117,10 +146,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const setRoutine = useCallback(
     (date: string, patch: Partial<RoutineLog>) => {
       setState((prev) => {
-        const existing = prev.routine[date] ?? { date, meals: 0, trained: false };
+        const existing = prev.routine[date];
+        // Build a complete RoutineLog. Spread existing last so we preserve any
+        // legacy fields (e.g. meals count) on entries created before the
+        // checklist redesign.
+        const base = {
+          date,
+          breakfast: false,
+          lunch: false,
+          dinner: false,
+          trained: false,
+          worked: false,
+          timeOff: false,
+          water: 0,
+          ...existing,
+        };
         return {
           ...prev,
-          routine: { ...prev.routine, [date]: { ...existing, ...patch, date } },
+          routine: { ...prev.routine, [date]: { ...base, ...patch, date } },
         };
       });
     },

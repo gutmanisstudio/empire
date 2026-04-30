@@ -2,16 +2,12 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { useStore } from "@/lib/store";
-import { eur } from "@/lib/format";
+import { useStore, metricValue } from "@/lib/store";
+import { formatMetricValue, formatThreshold, metricLabel } from "@/lib/format";
 import type { Upgrade } from "@/lib/types";
 
-function progressFor(u: Upgrade, mrr: number, cash: number, totalRev: number) {
-  const v = u.metric === "mrr" ? mrr : u.metric === "cash" ? cash : totalRev;
-  return { value: v, pct: Math.min(100, (v / u.threshold) * 100) };
-}
-
 const CATEGORY_LABEL: Record<Upgrade["category"], string> = {
+  self: "Body & mind",
   car: "Wheels",
   home: "Home",
   team: "Team",
@@ -19,31 +15,35 @@ const CATEGORY_LABEL: Record<Upgrade["category"], string> = {
   other: "Other",
 };
 
+const CATEGORY_ORDER: Upgrade["category"][] = ["self", "freedom", "home", "car", "team", "other"];
+
 export function Empire() {
   const { state } = useStore();
-  const { mrr, bankBalance, totalRevenue, upgrades } = state;
+  const { upgrades } = state;
 
   const grouped = upgrades.reduce<Record<string, Upgrade[]>>((acc, u) => {
     (acc[u.category] ??= []).push(u);
     return acc;
   }, {});
+  const orderedCats = CATEGORY_ORDER.filter((c) => grouped[c]?.length);
 
   return (
     <div className="space-y-8 pb-32">
       <header>
         <h2 className="text-2xl font-semibold tracking-tight">Empire</h2>
-        <p className="mt-1 text-sm text-white/50">Real upgrades unlock when real numbers cross thresholds.</p>
+        <p className="mt-1 text-sm text-white/50">Body first. Then empire. Real progress, not vibes.</p>
       </header>
 
-      {Object.entries(grouped).map(([cat, items]) => (
+      {orderedCats.map((cat) => (
         <section key={cat}>
-          <h3 className="mb-3 text-[10px] uppercase tracking-[0.25em] text-white/40">{CATEGORY_LABEL[cat as Upgrade["category"]]}</h3>
+          <h3 className="mb-3 text-[10px] uppercase tracking-[0.25em] text-white/40">{CATEGORY_LABEL[cat]}</h3>
           <div className="space-y-3">
-            {items
+            {grouped[cat]
               .slice()
               .sort((a, b) => a.threshold - b.threshold)
               .map((u) => {
-                const { value, pct } = progressFor(u, mrr, bankBalance, totalRevenue);
+                const value = metricValue(state, u.metric);
+                const pct = Math.min(100, (value / u.threshold) * 100);
                 const unlocked = !!u.unlockedAt;
                 return (
                   <motion.div
@@ -101,8 +101,10 @@ export function Empire() {
                           />
                         </div>
                         <div className="mt-2 flex justify-between text-[11px] text-white/50">
-                          <span>{eur(value)} / {eur(u.threshold)}</span>
-                          <span>{u.metric === "mrr" ? "MRR" : u.metric === "cash" ? "Cash" : "Total"}</span>
+                          <span>
+                            {formatMetricValue(value, u.metric)} / {formatThreshold(u.threshold, u.metric)}
+                          </span>
+                          <span>{metricLabel(u.metric)}</span>
                         </div>
                       </div>
                     </div>
