@@ -86,6 +86,25 @@ export const DEFAULT_UPGRADES: Upgrade[] = [
     metric: "cash",
     threshold: 3500,
   },
+  // Veneers — for the wife and for you. Smile flex unlocks.
+  {
+    id: "freedom-wife-veneers",
+    name: "Wife's veneers",
+    category: "freedom",
+    icon: "✦",
+    description: "€5k cash. Full set of veneers for the wife.",
+    metric: "cash",
+    threshold: 5000,
+  },
+  {
+    id: "freedom-self-veneers",
+    name: "My veneers",
+    category: "freedom",
+    icon: "✦",
+    description: "€5k cash. Full set for you. Smile like you mean it.",
+    metric: "cash",
+    threshold: 5000,
+  },
   // Safety net before bigger flexes.
   {
     id: "freedom-runway",
